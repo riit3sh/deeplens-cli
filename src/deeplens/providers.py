@@ -71,7 +71,7 @@ def _complete_text(text: str, limit: int = 80_000) -> str:
 
 
 import re
-import fitz
+import pymupdf
 import trafilatura
 
 def _article_text(html: str | bytes) -> str:
@@ -152,7 +152,7 @@ class HttpxPageExtractor:
                 # Check for PDF
                 if "pdf" in content_type or "octet-stream" in content_type or result.url.lower().endswith(".pdf"):
                     try:
-                        doc = fitz.open(stream=response.content, filetype="pdf")
+                        doc = pymupdf.open(stream=response.content, filetype="pdf")
                         text_blocks = [page.get_text() for page in doc]
                         raw_content = "\n".join(text_blocks)
                         # Strip citations
