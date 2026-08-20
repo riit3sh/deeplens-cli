@@ -1,0 +1,5 @@
+questions:
+  - id: india-nuclear-2040
+    question: Should India significantly expand nuclear power by 2040?
+    required_metrics: [runtime_seconds, source_count, evidence_count, token_usage]
+    notes: Live runs are opt-in; this file records measurements and never invents accuracy scores.
