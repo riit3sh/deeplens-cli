@@ -76,9 +76,22 @@ def main(argv: Sequence[str] | None = None) -> int:
         
         print("--- API Key Setup ---")
         print("Leave blank to keep current value.")
-        from .config import GLOBAL_ENV_FILE, save_global_config
+        
+        local_env = Path(".env")
         updates = {}
         
+        def save_local_config(new_vars: dict[str, str]) -> None:
+            env_vars = {}
+            if local_env.exists():
+                for line in local_env.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        env_vars[k.strip()] = v.strip()
+            env_vars.update(new_vars)
+            lines = [f"{k}={v}" for k, v in env_vars.items()]
+            local_env.write_text("\n".join(lines), encoding="utf-8")
+
         def prompt_key(name: str, key_var: str, current: str | None) -> None:
             masked = f"{current[:4]}...{current[-4:]}" if current and len(current) > 8 else ("(Set)" if current else "(Not Set)")
             val = input(f"{name} [{masked}]: ").strip()
@@ -93,8 +106,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             prompt_key("Firecrawl API Key (Optional)", "FIRECRAWL_API_KEY", settings.firecrawl_api_key)
             
             if updates:
-                save_global_config(updates)
-                print(f"\n[+] Configuration securely saved to {GLOBAL_ENV_FILE}")
+                save_local_config(updates)
+                print(f"\n[+] Configuration securely saved to local {local_env.absolute()}")
             else:
                 print("\nNo changes made.")
         except KeyboardInterrupt:
