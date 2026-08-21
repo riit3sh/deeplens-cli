@@ -5,8 +5,15 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
+import warnings
 from collections.abc import Sequence
 from pathlib import Path
+
+# Suppress messy LangChain/LangGraph deprecation warnings from showing up in the user's terminal
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+warnings.filterwarnings("ignore", message=".*allowed_objects.*")
+warnings.filterwarnings("ignore", message=".*LangChainPendingDeprecationWarning.*")
 
 from . import __version__
 from .config import Settings
@@ -14,7 +21,6 @@ from .providers import FirecrawlExtractor, HttpxPageExtractor, TavilySearchProvi
 from .reports import export_run
 from .research import ResearchEngine, RunEvent
 from .tui import ResearchApp
-
 
 def parser() -> argparse.ArgumentParser:
     command = argparse.ArgumentParser(prog="deeplens", description="Citation-grounded research.")
