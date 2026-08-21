@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
+import warnings
+warnings.showwarning = lambda *args, **kwargs: None
+
 import argparse
 import asyncio
 import sys
-import warnings
 from collections.abc import Sequence
 from pathlib import Path
-
-# Suppress messy LangChain/LangGraph deprecation warnings from showing up in the user's terminal
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
-warnings.filterwarnings("ignore", message=".*allowed_objects.*")
-warnings.filterwarnings("ignore", message=".*LangChainPendingDeprecationWarning.*")
 
 from . import __version__
 from .config import Settings
@@ -65,7 +61,10 @@ async def _script_research(args: argparse.Namespace, settings: Settings) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = parser().parse_args(argv)
+    _argv = sys.argv[1:] if argv is None else list(argv)
+    if not _argv:
+        _argv = ["research"]
+    args = parser().parse_args(_argv)
     if args.command == "config":
         settings = Settings()
         print("--- DeepLens Configuration ---")

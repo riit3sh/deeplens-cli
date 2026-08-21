@@ -1,79 +1,84 @@
 # DeepLens
 
-DeepLens is a terminal-native research pipeline for producing inspectable, citation-grounded reports. It is intentionally a small set of deterministic stages and narrowly scoped roles—not a collection of autonomous agents.
+DeepLens is a terminal-native AI research pipeline for producing inspectable, citation-grounded reports. It autonomously generates dynamic perspectives, browses the web, extracts factual evidence, and synthesizes final reports in Markdown and PDF formats.
 
 ```text
-CLI → Planner → parallel perspective researchers → source curator
-    → normalized evidence → research packets → contradiction/gap analysis
-    → writer → verifier → Markdown + PDF + JSON artifacts
+CLI → Dynamic LLM Planner → Parallel Perspective Researchers → Source Curator
+    → Evidence Extraction → Contradiction Analysis
+    → Writer → Report Assembly (Markdown + PDF + JSON)
 ```
 
-## Install
+## Installation
 
-Python 3.11+ is required. With uv:
+DeepLens requires Python 3.11+. Install it globally from PyPI:
 
 ```bash
-uv tool install deeplens
+pip install deeplens-cli
 ```
 
-For development:
+## Setup & Configuration
+
+DeepLens includes a built-in interactive configuration tool. Simply run:
 
 ```bash
-git clone https://github.com/your-org/deeplens
-cd deeplens
-uv sync --extra dev
-copy .env.example .env  # on Windows; populate only the keys you use
-uv run deeplens --help
-```
-
-`TAVILY_API_KEY` is required for live search. `FIRECRAWL_API_KEY` is optional; without it DeepLens uses its conservative HTTP extractor. `OPENAI_*` and `DEEPLENS_MODEL` are reserved for the provider-agnostic structured-LLM extension point; the initial deterministic planner/writer work without them.
-
-## Usage
-
-```bash
-deeplens research "Should India significantly expand nuclear power by 2040?" --max-perspectives 4
-deeplens research "..." --non-interactive --output reports
 deeplens config
 ```
 
-The default command opens the interactive research cockpit. It includes a focused question field,
-live stage log, progress bar, and **Open PDF** / **Open folder** actions when a run completes.
-Use `--non-interactive` for scripts. Firecrawl is optional: with only `TAVILY_API_KEY` configured,
-DeepLens uses its cleaned HTTP extractor and removes navigation, headers, footers, forms, and common
-site chrome before sentence-safe evidence extraction.
+This will instantly generate a `.env` template in your current folder and open it in your default text editor (like Notepad). You can configure your API keys here:
+- **Tavily API Key (Required):** Used for live web search and document retrieval.
+- **OpenAI API Key (Required):** Used for the LLM researcher and writer nodes.
+- **OpenAI Base URL (Optional):** Highly recommended! Point this to providers like DeepInfra (e.g., `https://api.deepinfra.com/v1/openai`) to use cheap, open-source models!
+- **DeepLens Model (Optional):** Define your specific model string (e.g., `meta-llama/Meta-Llama-3-8B-Instruct`).
+- **Firecrawl API Key (Optional):** Without it, DeepLens falls back to its built-in HTTP extractor.
 
-Each run creates `reports/<slug>-<timestamp>/` containing `report.md`, `report.pdf`, `sources.json`, `evidence.json`, and `run.json`. The JSON artifact includes sources, evidence, events, errors, timings, and model information. Credentials are never recorded.
+## Usage
 
-## Design notes
+To instantly launch the interactive terminal UI (TUI), just type:
 
-- Parallelism is used only for independent perspective research and per-query fetching; all aggregation is explicit.
-- Raw web pages are untrusted content. They are extracted as data, bounded in size, and never treated as instructions.
-- Curation has transparent relevance/authority/freshness/directness components. The writer consumes evidence records, not raw pages.
-- A rule-based verifier checks whether accepted sources appear in the report. A future LLM verifier can implement the same typed contract.
+```bash
+deeplens
+```
+
+Alternatively, pass your query directly:
+
+```bash
+deeplens research "Should India significantly expand nuclear power by 2040?" --max-perspectives 4
+```
+
+For scripts or CI pipelines, disable the TUI:
+
+```bash
+deeplens research "..." --non-interactive --output reports
+```
+
+Each run creates an isolated artifact directory like `reports/<slug>-<timestamp>/` containing:
+- `report.md` (Formatted Markdown report with citations)
+- `report.pdf` (Rendered PDF version)
+- `sources.json` (Curated bibliography)
+- `evidence.json` (Raw factual extractions)
+- `run.json` (System traces and timings)
+
+## Advanced Features
+
+- **Dynamic Perspective Generation:** The LLM Planner analyzes your exact intent (e.g., "controversies", "feasibility") and dynamically scopes the research angles.
+- **Aggressive Data Sanitization:** The pipeline actively filters out SEO spam, Windows file paths, UI elements, and irrelevant metadata from web documents before extraction.
+- **Robust Citation Engine:** The Writer intelligently maps extracted evidence back to the exact URL sources, gracefully handling broken citations or unlisted references.
+- **Fault-Tolerant Parallelism:** Background tasks are wrapped in exception handlers—if one web page or perspective crashes, the rest of the report continues assembling successfully.
 
 ## Development
 
+To work on DeepLens locally:
+
+```bash
+git clone https://github.com/riit3sh/deeplens-cli.git
+cd deeplens-cli
+python -m pip install -e ".[dev]"
+```
+
+Run tests and linters:
 ```bash
 python -m pytest
 python -m ruff check .
-python -m build
 ```
-
-Live integration testing is deliberately opt-in and should use configured accounts only:
-
-```bash
-python -m pytest -m integration
-```
-
-## Limitations
-
-This first release does not claim factual accuracy, does not bypass paywalls, and cannot make weak web evidence strong. It uses a deterministic planner and report composer by default so local runs are reproducible; an OpenAI-compatible structured-output adapter is the next extension. The included Textual view is an optional progress surface; `--non-interactive` is appropriate for scripts and CI.
-
-## PyPI release
-
-1. Update the version in `pyproject.toml` and `src/deeplens/__init__.py`.
-2. Run tests, Ruff, and `python -m build` from a clean checkout.
-3. Inspect `dist/` with `twine check dist/*`.
-4. Upload first to TestPyPI, smoke-test `pip install`, then publish with a PyPI trusted publisher or `twine upload dist/*`.
 
 Licensed under [MIT](LICENSE).
