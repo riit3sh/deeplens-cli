@@ -81,6 +81,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         try:
             prompt_key("OpenAI API Key", "OPENAI_API_KEY", settings.openai_api_key)
+            prompt_key("OpenAI Base URL (Optional)", "OPENAI_BASE_URL", settings.openai_base_url)
+            prompt_key("DeepLens Model (Optional)", "DEEPLENS_MODEL", settings.deeplens_model)
             prompt_key("Tavily API Key", "TAVILY_API_KEY", settings.tavily_api_key)
             prompt_key("Firecrawl API Key (Optional)", "FIRECRAWL_API_KEY", settings.firecrawl_api_key)
             
