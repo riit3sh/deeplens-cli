@@ -5,9 +5,30 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+GLOBAL_CONFIG_DIR = Path.home() / ".deeplens"
+GLOBAL_ENV_FILE = GLOBAL_CONFIG_DIR / ".env"
+
+def save_global_config(updates: dict[str, str]) -> None:
+    """Save updates to the global ~/.deeplens/.env file."""
+    GLOBAL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    env_vars = {}
+    if GLOBAL_ENV_FILE.exists():
+        for line in GLOBAL_ENV_FILE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                env_vars[k.strip()] = v.strip()
+    env_vars.update(updates)
+    lines = [f"{k}={v}" for k, v in env_vars.items()]
+    GLOBAL_ENV_FILE.write_text("\n".join(lines), encoding="utf-8")
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(str(GLOBAL_ENV_FILE), ".env"), 
+        env_file_encoding="utf-8", 
+        extra="ignore"
+    )
 
     tavily_api_key: str | None = None
     firecrawl_api_key: str | None = None

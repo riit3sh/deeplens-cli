@@ -30,7 +30,7 @@ def parser() -> argparse.ArgumentParser:
     research.add_argument(
         "--non-interactive", action="store_true", help="Run without the TUI; suitable for CI."
     )
-    sub.add_parser("config", help="Show safe effective configuration.")
+    sub.add_parser("config", help="Show or set up global API keys and configuration.")
     return command
 
 
@@ -62,9 +62,36 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser().parse_args(argv)
     if args.command == "config":
         settings = Settings()
-        print(
-            f"model={settings.deeplens_model or '(not configured)'}\nsearch={'tavily' if settings.has_live_search else 'unconfigured'}\nextractor={'firecrawl' if settings.firecrawl_api_key else 'httpx'}\noutput={settings.output_dir}"
-        )
+        print("--- DeepLens Configuration ---")
+        print(f"  Model:      {settings.deeplens_model or '(default)'}")
+        print(f"  Search:     {'tavily' if settings.has_live_search else 'unconfigured'}")
+        print(f"  Extractor:  {'firecrawl' if settings.firecrawl_api_key else 'httpx'}")
+        print(f"  Output Dir: {settings.output_dir}\n")
+        
+        print("--- API Key Setup ---")
+        print("Leave blank to keep current value.")
+        from .config import GLOBAL_ENV_FILE, save_global_config
+        updates = {}
+        
+        def prompt_key(name: str, key_var: str, current: str | None) -> None:
+            masked = f"{current[:4]}...{current[-4:]}" if current and len(current) > 8 else ("(Set)" if current else "(Not Set)")
+            val = input(f"{name} [{masked}]: ").strip()
+            if val:
+                updates[key_var] = val
+
+        try:
+            prompt_key("OpenAI API Key", "OPENAI_API_KEY", settings.openai_api_key)
+            prompt_key("Tavily API Key", "TAVILY_API_KEY", settings.tavily_api_key)
+            prompt_key("Firecrawl API Key (Optional)", "FIRECRAWL_API_KEY", settings.firecrawl_api_key)
+            
+            if updates:
+                save_global_config(updates)
+                print(f"\n[+] Configuration securely saved to {GLOBAL_ENV_FILE}")
+            else:
+                print("\nNo changes made.")
+        except KeyboardInterrupt:
+            print("\nSetup cancelled.")
+            
         return 0
     settings = Settings(
         output_dir=args.output,
