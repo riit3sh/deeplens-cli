@@ -74,44 +74,34 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"  Extractor:  {'firecrawl' if settings.firecrawl_api_key else 'httpx'}")
         print(f"  Output Dir: {settings.output_dir}\n")
         
-        print("--- API Key Setup ---")
-        print("Leave blank to keep current value.")
-        
         local_env = Path(".env")
-        updates = {}
-        
-        def save_local_config(new_vars: dict[str, str]) -> None:
-            env_vars = {}
-            if local_env.exists():
-                for line in local_env.read_text(encoding="utf-8").splitlines():
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        k, v = line.split("=", 1)
-                        env_vars[k.strip()] = v.strip()
-            env_vars.update(new_vars)
-            lines = [f"{k}={v}" for k, v in env_vars.items()]
-            local_env.write_text("\n".join(lines), encoding="utf-8")
-
-        def prompt_key(name: str, key_var: str, current: str | None) -> None:
-            masked = f"{current[:4]}...{current[-4:]}" if current and len(current) > 8 else ("(Set)" if current else "(Not Set)")
-            val = input(f"{name} [{masked}]: ").strip()
-            if val:
-                updates[key_var] = val
-
-        try:
-            prompt_key("OpenAI API Key", "OPENAI_API_KEY", settings.openai_api_key)
-            prompt_key("OpenAI Base URL (Optional)", "OPENAI_BASE_URL", settings.openai_base_url)
-            prompt_key("DeepLens Model (Optional)", "DEEPLENS_MODEL", settings.deeplens_model)
-            prompt_key("Tavily API Key", "TAVILY_API_KEY", settings.tavily_api_key)
-            prompt_key("Firecrawl API Key (Optional)", "FIRECRAWL_API_KEY", settings.firecrawl_api_key)
+        if not local_env.exists():
+            template = (
+                "# DeepLens API Configuration\n"
+                "OPENAI_API_KEY=\n"
+                "OPENAI_BASE_URL=\n"
+                "DEEPLENS_MODEL=\n"
+                "TAVILY_API_KEY=\n"
+                "FIRECRAWL_API_KEY=\n"
+            )
+            local_env.write_text(template, encoding="utf-8")
+            print(f"[+] Created new configuration template at {local_env.absolute()}")
+        else:
+            print(f"[*] Opening existing configuration at {local_env.absolute()}")
             
-            if updates:
-                save_local_config(updates)
-                print(f"\n[+] Configuration securely saved to local {local_env.absolute()}")
+        print("Opening the .env file in your text editor. Please fill in your keys, save the file, and close the editor.")
+        
+        import os
+        import subprocess
+        try:
+            if os.name == 'nt':
+                os.startfile(local_env.absolute())
+            elif sys.platform == 'darwin':
+                subprocess.call(['open', str(local_env.absolute())])
             else:
-                print("\nNo changes made.")
-        except KeyboardInterrupt:
-            print("\nSetup cancelled.")
+                subprocess.call(['xdg-open', str(local_env.absolute())])
+        except Exception as e:
+            print(f"Could not open editor automatically. Please manually edit the .env file at: {local_env.absolute()}")
             
         return 0
     settings = Settings(
